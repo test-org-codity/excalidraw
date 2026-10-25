@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 import "./Tooltip.scss";
 
@@ -70,6 +70,8 @@ const TOOLTIP_WARM_WINDOW = 300;
 
 let showTooltipTimer = 0;
 let tooltipHiddenAt = 0;
+/** the Tooltip instance that showed (or is about to show) the shared tooltip */
+let tooltipOwner: object | null = null;
 
 const hideTooltip = () => {
   clearTimeout(showTooltipTimer);
@@ -116,8 +118,17 @@ export const Tooltip = ({
   disabled,
   delay = false,
 }: TooltipProps) => {
+  const owner = useRef({});
   useEffect(() => {
-    return () => hideTooltip();
+    const self = owner.current;
+    return () => {
+      // only retract the shared tooltip (or its pending show) if this
+      // instance owns it; an unrelated Tooltip unmounting must not hide it
+      if (tooltipOwner === self) {
+        tooltipOwner = null;
+        hideTooltip();
+      }
+    };
   }, []);
   if (disabled) {
     return null;
@@ -129,6 +140,7 @@ export const Tooltip = ({
         const item = event.currentTarget as HTMLDivElement;
         const show = () => updateTooltip(item, getTooltipDiv(), label, long);
         clearTimeout(showTooltipTimer);
+        tooltipOwner = owner.current;
         if (delay && Date.now() - tooltipHiddenAt > TOOLTIP_WARM_WINDOW) {
           showTooltipTimer = window.setTimeout(show, TOOLTIP_DELAY);
         } else {

@@ -4278,7 +4278,10 @@ class App extends React.Component<AppProps, AppState> {
     container.setAttribute("data-zen-mode-transition", "");
     clearTimeout(this.zenModeTransitionTimer);
     this.zenModeTransitionTimer = window.setTimeout(() => {
-      container.removeAttribute("data-zen-mode-transition");
+      // read the ref when the timer fires, not the node captured above
+      this.excalidrawContainerRef.current?.removeAttribute(
+        "data-zen-mode-transition",
+      );
       // slightly past the CSS transition so it isn't cut short
     }, ZEN_MODE_TRANSITION_DURATION + 100);
   }
